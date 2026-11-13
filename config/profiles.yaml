@@ -1,0 +1,107 @@
+# Topic Digest Pipeline configuration.
+# Add a new topic by adding a block under `profiles:` — no code changes needed.
+
+settings:
+  model: "gemini-3.5-flash"      # override with the GEMINI_MODEL env var
+  lookback_days: 7               # only items published within this window
+  max_candidates: 150            # hard cap on articles sent to the LLM per run (newest first)
+  batch_size: 12                 # articles evaluated per LLM request (saves free-tier quota)
+  request_pause_seconds: 6       # pause between LLM requests (free-tier RPM limits)
+  output_language: "English"     # language of core_idea / key_takeaways in the digest
+  max_items: 10                  # digest keeps at most this many top-scoring articles
+  max_source_share: 0.5          # at most this share of max_items from one source (1.0 = no limit)
+  # max_items and max_source_share can also be set inside a profile to override these defaults.
+
+profiles:
+  ai-sdlc-architecture:
+    description: "AI in enterprise software development: coding agents, context engineering, verification, adoption practices and measured outcomes across the SDLC/PDLC."
+    rss_sources:
+      # arXiv's RSS feed only carries the latest day, so the Atom API is used to cover the whole week.
+      - name: "arXiv cs.SE (Software Engineering)"
+        url: "https://export.arxiv.org/api/query?search_query=cat:cs.SE&sortBy=submittedDate&sortOrder=descending&max_results=300"
+      - name: "GitHub Blog — AI & ML"
+        url: "https://github.blog/ai-and-ml/feed/"
+      - name: "GitHub Next"
+        url: "https://githubnext.com/rss.xml"
+        keyword_filter: false
+      # Anthropic publishes no official RSS. These are community-generated feeds
+      # (github.com/Olshansk/rss-feeds) scraped from anthropic.com / claude.com.
+      - name: "Anthropic Engineering"
+        url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml"
+        keyword_filter: false
+      - name: "Claude Blog"
+        url: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_claude.xml"
+      - name: "Simon Willison's Weblog"
+        url: "https://simonwillison.net/atom/everything/"
+      - name: "Latent Space"
+        url: "https://www.latent.space/feed"
+      # Curated low-volume source: skip the keyword pre-filter, let the LLM judge everything.
+      - name: "Martin Fowler"
+        url: "https://martinfowler.com/feed.atom"
+        keyword_filter: false
+    # Case-insensitive, whole-word match against title + summary (a trailing plural "s" is also accepted).
+    # This is a coarse recall filter: it only has to drop articles that are clearly not about AI in
+    # software development. Precision is the LLM's job.
+    keywords:
+      # AI in the development workflow
+      - "agentic"
+      - "agent"
+      - "multi-agent"
+      - "LLM"
+      - "large language model"
+      - "generative AI"
+      - "GenAI"
+      - "AI-assisted"
+      - "AI-generated"
+      - "AI coding"
+      - "AI-native"
+      - "vibe coding"
+      - "Copilot"
+      - "Claude Code"
+      - "Codex"
+      - "Cursor"
+      # SDLC activities where AI is applied
+      - "code generation"
+      - "code review"
+      - "test generation"
+      - "legacy modernization"
+      - "code migration"
+      - "spec-driven"
+      - "SDLC"
+      - "software development lifecycle"
+      # Engineering patterns
+      - "context engineering"
+      - "RAG"
+      - "MCP"
+      - "guardrail"
+      - "evals"
+      # Enterprise adoption
+      - "enterprise"
+      - "developer productivity"
+      - "developer experience"
+      - "AI adoption"
+      - "AI governance"
+      - "industrial case study"
+    signal_threshold: 8
+    system_prompt: |
+      You are a Principal Software Architect and AI Transformation Consultant. Evaluate incoming articles strictly based on their value for teams adopting AI in enterprise software development (SDLC/PDLC).
+      High signal: evidence from real-world or industrial use (case studies, measured productivity and quality outcomes, failure modes), reproducible engineering patterns for coding agents (context management, verification, guardrails, evaluation), architectural shifts in how software is specified, built, reviewed, tested and operated with AI, and governance, security and compliance practices for AI-generated code.
+      Low signal: marketing hype, funding and business news, superficial product releases and version bumps, generic overviews, and narrow benchmarks or academic results with no practical consequence for enterprise teams.
+
+  health-biohacking:
+    description: "Evidence-based longevity, athletic performance, sleep architecture, and metabolic health."
+    rss_sources:
+      - name: "Stronger By Science"
+        url: "https://www.strongerbyscience.com/feed/"
+        keyword_filter: false
+    keywords:
+      - "HRV"
+      - "sleep"
+      - "hypertrophy"
+      - "recovery"
+      - "zone 2"
+      - "VO2max"
+      - "protein"
+    signal_threshold: 8
+    system_prompt: |
+      You are a sports physiologist and evidence-based longevity expert. Evaluate articles and studies strictly on clinical and practical significance for training, recovery, and metabolic health. Filter out commercial wellness marketing.

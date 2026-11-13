@@ -1,0 +1,53 @@
+name: Universal Topic Digest Pipeline
+
+on:
+  schedule:
+    - cron: '0 23 * * 0' # Every Sunday at 23:00 UTC
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Profile from config/profiles.yaml (or 'all')"
+        required: true
+        default: 'ai-sdlc-architecture'
+        type: string
+
+concurrency:
+  group: digest-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # Scheduled runs use the DIGEST_PROFILE repository variable if set (e.g. 'all').
+      PROFILE: ${{ github.event.inputs.profile || vars.DIGEST_PROFILE || 'ai-sdlc-architecture' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Digest Generator
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+        run: python src/main.py --profile "$PROFILE"
+
+      - name: Commit and Push Digest
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add digests/
+          git commit -m "chore(digest): automated weekly sync for profile '$PROFILE'" || echo "No changes to commit"
+          git push
