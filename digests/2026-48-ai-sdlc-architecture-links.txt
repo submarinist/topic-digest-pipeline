@@ -1,0 +1,7 @@
+https://arxiv.org/pdf/2611.27112v1
+https://arxiv.org/pdf/2611.27095v1
+https://arxiv.org/pdf/2611.23353v2
+https://arxiv.org/pdf/2611.23335v1
+https://arxiv.org/pdf/2611.27106v1
+https://latent.space/p/formal-verification/
+https://simonwillison.net/2026/Nov/17/external-sandboxes-for-coding-agents/
